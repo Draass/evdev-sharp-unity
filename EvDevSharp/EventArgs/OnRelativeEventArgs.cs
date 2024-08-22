@@ -1,10 +1,13 @@
-namespace EvDevSharp;
+using System;
 
-public class OnRelativeEventArgs : EventArgs
+namespace EvDevSharp
 {
-    public OnRelativeEventArgs(EvDevRelativeAxisCode axis, int value) =>
-        (Axis, Value) = (axis, value);
+    public class OnRelativeEventArgs : EventArgs
+    {
+        public OnRelativeEventArgs(EvDevRelativeAxisCode axis, int value) =>
+            (Axis, Value) = (axis, value);
 
-    public EvDevRelativeAxisCode Axis { get; set; }
-    public int Value { get; set; }
+        public EvDevRelativeAxisCode Axis { get; set; }
+        public int Value { get; set; }
+    }
 }
