@@ -5,20 +5,10 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using EvDevSharp.InteropStructs;
-using static EvDevSharp.IoCtlRequest;
 
-namespace EvDevSharp
+namespace EvDevSharp.Wrappers.Mouse
 {
-    public unsafe class LinuxNativeMethods
-    {
-        [DllImport("libc", SetLastError = true)]
-        public static extern int ioctl(IntPtr fd, ulong request, void* data);
-
-        [DllImport("libc", SetLastError = true)]
-        public static extern int ioctl(IntPtr fd, ulong request, [Out] byte[] data);
-    }
-    
-    public unsafe partial class EvDevDevice : IDisposable
+    public partial class EvDevDeviceBase
     {
         private const string InputPath = "/dev/input/";
         private const string InputPathSearchPattern = "event*";
@@ -199,5 +189,6 @@ namespace EvDevSharp
 
             return EvDevGuessedDeviceType.Unknown;
         }
+    }
     }
 }
