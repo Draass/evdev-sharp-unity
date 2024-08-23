@@ -16,6 +16,23 @@ This method will enumerate each `/dev/input/event*` file and creates an object f
 Each `EvDevDevice` instance contains properties such as device's buttons and axises. It also provides events that you can subscribe to.
 In order to get events you must call the `StartMonitoring()` method on the instance. This method will constantly read the device's evdev file on a separate thread and will raise events accordingly.
 
+## Requirements:
+- C# 9.0 or later
+- .Net Standard 2.1 or .Net Framework 4.8.1 (probably will try to downgrade in the future if it will be requested)
+- For Unity - should work for any C# and .Net Framework/Standard compatible version, though it was tested only on Unity 2022.3.26f1
+- Should work on any Linux version, but it was tested only on RedOs 8.0
+- Application should be run as root in order to access evdev devices
+
+## Installation:
+### Clear C#
+Just download it on NuGet and add it to your project 
+
+Link: https://www.nuget.org/packages/EvDevSharpWrapper.
+### Unity
+There are basically 2 ways:
+- Install NuGet for Unity and repeat the previous step
+- Or just download/build dll and drop to the Assets folder
+
 ### Examples
 The following code will list every evdev device on the system:
 
@@ -42,4 +59,3 @@ gamepad.OnKeyEvent += (s, e) =>
 gamepad.StartMonitoring();
 ```
 
-There is also an example project (EvDevSharp.Example) that you can refer to.
