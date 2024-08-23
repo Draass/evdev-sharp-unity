@@ -1,10 +1,13 @@
-namespace EvDevSharp;
+using System;
 
-public class EvDevEventArgs : EventArgs
+namespace EvDevSharp
 {
-    public EvDevEventArgs(int code, int value) =>
-        (Code, Value) = (code, value);
+    public class EvDevEventArgs : EventArgs
+    {
+        public EvDevEventArgs(int code, int value) =>
+            (Code, Value) = (code, value);
 
-    public int Code { get; set; }
-    public int Value { get; set; }
+        public int Code { get; set; }
+        public int Value { get; set; }
+    }
 }
