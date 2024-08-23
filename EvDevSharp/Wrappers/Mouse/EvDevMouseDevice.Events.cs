@@ -1,6 +1,6 @@
 using System;
 
-namespace EvDevSharp.Wrappers
+namespace EvDevSharp.Wrappers.Mouse
 {
     public partial class EvDevMouseDevice
     {

@@ -1,17 +1,26 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using EvDevSharp.InteropStructs;
 
-namespace EvDevSharp.Wrappers
+namespace EvDevSharp.Wrappers.Mouse
 {
+    public enum ButtonPressState
+    {
+        Pressed,
+        Released
+    }
+    
     public partial class EvDevMouseDevice
     {
         protected Task? monitoringTask;
         protected CancellationTokenSource? cts;
 
+        private Dictionary<EvDevKeyCode, ButtonPressState> mouseButtons = new();
+        
         /// <summary>
         /// This method starts to read the device's event file on a separate thread and will raise events accordingly.
         /// </summary>
@@ -46,25 +55,35 @@ namespace EvDevSharp.Wrappers
 
                             switch ((EvDevKeyCode) inputEvent.code)
                             {
-                                case EvDevKeyCode.BTN_1:
-                                    break;
-                                case EvDevKeyCode.BTN_2:
-                                    break;
-                                case EvDevKeyCode.BTN_3:
-                                    break;
-                                case EvDevKeyCode.BTN_4:
-                                    break;
-                                case EvDevKeyCode.BTN_5:
-                                    break;
-                                case EvDevKeyCode.BTN_6:
-                                    break;
-                                case EvDevKeyCode.BTN_7:
-                                    break;
-                                case EvDevKeyCode.BTN_8:
-                                    break;
-                                case EvDevKeyCode.BTN_9:
-                                    break;
+                                // case EvDevKeyCode.BTN_1:
+                                //     break;
+                                // case EvDevKeyCode.BTN_2:
+                                //     break;
+                                // case EvDevKeyCode.BTN_3:
+                                //     break;
+                                // case EvDevKeyCode.BTN_4:
+                                //     break;
+                                // case EvDevKeyCode.BTN_5:
+                                //     break;
+                                // case EvDevKeyCode.BTN_6:
+                                //     break;
+                                // case EvDevKeyCode.BTN_7:
+                                //     break;
+                                // case EvDevKeyCode.BTN_8:
+                                //     break;
+                                // case EvDevKeyCode.BTN_9:
+                                //     break;
                                 case EvDevKeyCode.BTN_MOUSE:
+                                    if (mouseButtons[EvDevKeyCode.BTN_MOUSE] == ButtonPressState.Pressed)
+                                    {
+                                        OnLeftMouseButtonReleased?.Invoke(this, new EvDevEventArgs(inputEvent.code, inputEvent.value));
+                                        mouseButtons[EvDevKeyCode.BTN_MOUSE] = ButtonPressState.Released;
+                                    }
+                                    else
+                                    {
+                                        OnLeftMouseButtonPressed?.Invoke(this, new EvDevEventArgs(inputEvent.code, inputEvent.value));
+                                        mouseButtons[EvDevKeyCode.BTN_MOUSE] = ButtonPressState.Pressed;
+                                    }
                                     break;
                                 case EvDevKeyCode.BTN_RIGHT:
                                     break;
