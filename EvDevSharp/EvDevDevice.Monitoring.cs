@@ -7,15 +7,15 @@ using EvDevSharp.InteropStructs;
 
 namespace EvDevSharp
 {
-    public sealed partial class EvDevDevice : IDisposable
+    public partial class EvDevDevice : IDisposable
     {
-        private Task? monitoringTask;
-        private CancellationTokenSource? cts;
+        protected Task? monitoringTask;
+        protected CancellationTokenSource? cts;
 
         /// <summary>
         /// This method starts to read the device's event file on a separate thread and will raise events accordingly.
         /// </summary>
-        public void StartMonitoring()
+        public virtual void StartMonitoring()
         {
             if (cts is not null && !cts.IsCancellationRequested)
                 return;

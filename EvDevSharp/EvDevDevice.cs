@@ -9,7 +9,7 @@ using static EvDevSharp.IoCtlRequest;
 
 namespace EvDevSharp
 {
-    public unsafe sealed partial class EvDevDevice : IDisposable
+    public unsafe partial class EvDevDevice : IDisposable
     {
         // TODO вместо CULong использовать ulong
         // не уверен, что это поможет, но попробовать стоит
@@ -37,7 +37,7 @@ namespace EvDevSharp
         public List<EvDevProperty> Properties { get; set; }
 
 
-        private EvDevDevice(string path)
+        public EvDevDevice(string path)
         {
             using var eventFile = File.OpenRead(path);
             var fd = eventFile.SafeFileHandle.DangerousGetHandle();
