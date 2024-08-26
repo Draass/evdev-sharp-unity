@@ -54,7 +54,7 @@ namespace EvDevSharp
             handle.Free();
         }
 
-        protected virtual void ProcessInput(InputEvent inputEvent)
+        internal virtual void ProcessInput(InputEvent inputEvent)
         {
             switch ((EvDevEventType) inputEvent.type)
             {

@@ -1,12 +1,9 @@
-﻿using System;
-
-namespace EvDevSharp.Wrappers.Mouse
+﻿namespace EvDevSharp.Wrappers.Mouse
 {
-    public partial class EvDevMouseDevice : EvDevDevice
+    public sealed partial class EvDevMouseDevice : EvDevDevice
     {
-        public EvDevMouseDevice(string path) : base(path)
+        internal EvDevMouseDevice(EvDevDeviceData data) : base(data)
         {
-            throw new NotImplementedException();
         }
     }
     

@@ -2,7 +2,7 @@
 {
     public partial class EvDevKeyboardDevice : EvDevDevice
     {
-        public EvDevKeyboardDevice(string path) : base(path)
+        internal EvDevKeyboardDevice(EvDevDeviceData data) : base(data)
         {
         }
     }

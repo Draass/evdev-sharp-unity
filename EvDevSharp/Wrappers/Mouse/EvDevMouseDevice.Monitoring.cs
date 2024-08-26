@@ -4,17 +4,17 @@ using EvDevSharp.InteropStructs;
 
 namespace EvDevSharp.Wrappers.Mouse
 {
-    public enum ButtonPressState
-    {
-        Pressed,
-        Released
-    }
-
     public partial class EvDevMouseDevice 
     {
+        enum ButtonPressState
+        {
+            Pressed,
+            Released
+        }
+        
         private readonly Dictionary<EvDevKeyCode, ButtonPressState> _mouseButtonsStates = new();
 
-        protected override void ProcessInput(InputEvent inputEvent)
+        internal override void ProcessInput(InputEvent inputEvent)
         {
             switch ((EvDevEventType) inputEvent.type)
                 {

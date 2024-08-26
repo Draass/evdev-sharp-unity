@@ -9,7 +9,7 @@
         <Description>Wrapper library for evdev for C# </Description>
         <RepositoryUrl>https://github.com/Draass/evdev-sharp-unity</RepositoryUrl>
         <PackageTags>linux;evdev;c#</PackageTags>
-        <Version>0.1</Version>
+        <Version>0.2</Version>
         <Authors>draas</Authors>
         <PackageId>EvDevSharpWrapper</PackageId>
         <TargetFrameworks>net6.0;netstandard2.1;net481</TargetFrameworks>
