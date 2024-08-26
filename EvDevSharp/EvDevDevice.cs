@@ -11,11 +11,19 @@ namespace EvDevSharp
 {
     public unsafe class LinuxNativeMethods
     {
+#if NETSTANDARD || NETFRAMEWORK
         [DllImport("libc", SetLastError = true)]
         public static extern int ioctl(IntPtr fd, ulong request, void* data);
 
         [DllImport("libc", SetLastError = true)]
         public static extern int ioctl(IntPtr fd, ulong request, [Out] byte[] data);
+#elif NET6_0
+        [DllImport("libc", SetLastError = true)]
+        public static extern int ioctl(IntPtr fd, CULong request, void* data);
+
+        [DllImport("libc", SetLastError = true)]
+        public static extern int ioctl(IntPtr fd, CULong request, [Out] byte[] data);
+#endif
     }
     
     public unsafe partial class EvDevDevice : IDisposable
@@ -45,17 +53,28 @@ namespace EvDevSharp
             
             int version = 0;
             
+#if NETSTANDARD || NETFRAMEWORK
             ulong EVUIOCGVERSION_LONG = 2147763457;
             if (LinuxNativeMethods.ioctl(fd, EVUIOCGVERSION_LONG, &version) == -1)
                 throw new Win32Exception($"Unable to get evdev driver version for {path}");
+#elif NET6_0
+            if (LinuxNativeMethods.ioctl(fd, new CULong(EVIOCGVERSION), &version) == -1)
+                throw new Win32Exception($"Unable to get evdev driver version for {path}");
+#endif
+            
 
             DriverVersion = new Version(version >> 16, (version >> 8) & 0xff, version & 0xff);
 
             var id = stackalloc ushort[4];
 
+#if NETSTANDARD || NETFRAMEWORK
             ulong EVIOCGID_LONG = EVIOCGID;
             if (LinuxNativeMethods.ioctl(fd, EVIOCGID_LONG, id) == -1)
                 throw new Win32Exception($"Unable to get evdev id for {path}");
+#elif NET6_0
+            if (LinuxNativeMethods.ioctl(fd, new CULong(EVIOCGID), id) == -1)
+                throw new Win32Exception($"Unable to get evdev id for {path}");
+#endif
 
             Id = new EvDevDeviceId
             {
@@ -66,10 +85,17 @@ namespace EvDevSharp
             };
 
             var str = stackalloc byte[256];
+            
+#if NETSTANDARD || NETFRAMEWORK
             ulong EVIOCGNAME_LONG = EVIOCGNAME(256);
             
             if (LinuxNativeMethods.ioctl(fd, EVIOCGNAME_LONG, str) == -1)
                 throw new Win32Exception($"Unable to get evdev name for {path}");
+#elif NET6_0
+            if (LinuxNativeMethods.ioctl(fd, new CULong(EVIOCGNAME(256)), str) == -1)
+                throw new Win32Exception($"Unable to get evdev name for {path}");
+#endif
+
 
             Name = Marshal.PtrToStringAnsi(new IntPtr(str));
 
@@ -82,16 +108,29 @@ namespace EvDevSharp
             var bitCount = (int) EvDevKeyCode.KEY_MAX;
             var bits = new byte[bitCount / 8 + 1];
 
+#if NETSTANDARD || NETFRAMEWORK
             ulong EVIOCGBIT_SYN_LONG = EVIOCGBIT(EvDevEventType.EV_SYN, bitCount);
             LinuxNativeMethods.ioctl(fd, EVIOCGBIT_SYN_LONG, bits);
+#elif NET6_0
+            LinuxNativeMethods.ioctl(fd, new CULong(EVIOCGBIT(EvDevEventType.EV_SYN, bitCount)), bits);
+#endif
+
             var supportedEvents = DecodeBits(bits).Cast<EvDevEventType>().ToList();
             foreach (var evType in supportedEvents)
             {
                 if (evType == EvDevEventType.EV_SYN)
                     continue;
+                
                 Array.Clear(bits, 0, bits.Length);
+                
+#if NETSTANDARD || NETFRAMEWORK
                 ulong EVIOCGBIT_EVENT_LONG = EVIOCGBIT(evType, bitCount);
+                
                 LinuxNativeMethods.ioctl(fd, EVIOCGBIT_EVENT_LONG, bits);
+#elif NET6_0
+                LinuxNativeMethods.ioctl(fd, new CULong(EVIOCGBIT(evType, bitCount)), bits);
+#endif
+                
                 RawEventCodes[evType] = DecodeBits(bits);
             }
 
@@ -108,15 +147,26 @@ namespace EvDevSharp
                     x =>
                     {
                         var absInfo = default(EvDevAbsAxisInfo);
+                        
+#if NETSTANDARD || NETFRAMEWORK
                         ulong EVIOCGABS_LONG = EVIOCGABS(x);
                         LinuxNativeMethods.ioctl(fd, EVIOCGABS_LONG, &absInfo);
+#elif NET6_0
+                        LinuxNativeMethods.ioctl(fd, new CULong(EVIOCGABS(x)), &absInfo);
+#endif
                         return absInfo;
                     });
             }
 
             Array.Clear(bits, 0, bits.Length);
+            
+#if NETSTANDARD || NETFRAMEWORK
             ulong EVIOCGPROP_LONG = EVIOCGPROP((int) EvDevProperty.INPUT_PROP_CNT);
             LinuxNativeMethods.ioctl(fd, EVIOCGPROP_LONG, bits);
+#elif NET6_0
+            LinuxNativeMethods.ioctl(fd, new CULong(EVIOCGPROP((int) EvDevProperty.INPUT_PROP_CNT)), bits);
+#endif
+            
             Properties = DecodeBits(bits, (int) EvDevProperty.INPUT_PROP_CNT).Cast<EvDevProperty>().ToList();
 
             GuessedDeviceType = GuessDeviceType();

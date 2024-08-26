@@ -3,7 +3,6 @@
     <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
-        <TargetFrameworks>netstandard2.1;net481</TargetFrameworks>
         <LangVersion>9</LangVersion>
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
         <Title>EvDevSharp</Title>
@@ -13,6 +12,7 @@
         <Version>0.1</Version>
         <Authors>draas</Authors>
         <PackageId>EvDevSharpWrapper</PackageId>
+        <TargetFrameworks>net6.0;netstandard2.1;net481</TargetFrameworks>
     </PropertyGroup>
 
 </Project>
