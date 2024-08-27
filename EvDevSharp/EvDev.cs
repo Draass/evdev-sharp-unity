@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using EvDevSharp.InteropStructs;
+using EvDevSharp.Wrappers.Keyboard;
 using EvDevSharp.Wrappers.Mouse;
 
 namespace EvDevSharp
@@ -15,29 +16,28 @@ namespace EvDevSharp
     /// </summary>
     public static unsafe class EvDev
     {
-        private const string InputPath = "/dev/input/";
-        private const string InputPathSearchPattern = "event*";
+        private const string INPUT_PATH = "/dev/input/";
+        private const string INPUT_PATH_SEARCH_PATTERN = "event*";
 
         private static Dictionary<Type, List<EvDevDevice>> RegisteredDevices = new();
 
         /// <summary>
         /// Enumerates all the Linux event files and generates a <c>EvDevDevice</c> object for each file.
         /// </summary>
-        /// <exception cref="System.PlatformNotSupportedException"></exception>
+        /// <exception cref="System.PlatformNotSupportedException">Current OS is not Linux</exception>
         public static void RegisterDevices()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 throw new PlatformNotSupportedException();
+            
+            var devicesPaths = Directory.GetFiles(INPUT_PATH, INPUT_PATH_SEARCH_PATTERN);
 
-            var devicesPaths = Directory.GetFiles(InputPath, InputPathSearchPattern);
-
-            foreach (var path in devicesPaths)
+            Parallel.ForEach(devicesPaths, path =>
             {
                 EvDevDeviceData deviceData = GetDeviceData(path);
 
                 var device = CreateDeviceOfType(deviceData);
 
-                // BUG null reference exception??
                 if (RegisteredDevices.TryGetValue(device.GetType(), out var registeredDevices))
                 {
                     if (registeredDevices.Exists(d => d.DevicePath == device.DevicePath))
@@ -52,12 +52,9 @@ namespace EvDevSharp
                 {
                     RegisteredDevices.Add(device.GetType(), new List<EvDevDevice> {device});
                 }
-            }
-            
-            // Parallel.ForEach(devicesPaths, path =>
-            // {
-            //     
-            // });
+                
+                device.StartMonitoring();
+            });
         }
 
         /// <summary>
@@ -69,13 +66,13 @@ namespace EvDevSharp
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 throw new PlatformNotSupportedException();
 
-            var devicesPaths = Directory.GetFiles(InputPath, InputPathSearchPattern);
+            var devicesPaths = Directory.GetFiles(INPUT_PATH, INPUT_PATH_SEARCH_PATTERN);
 
             Parallel.ForEach(devicesPaths, path =>
             {
                 EvDevDeviceData deviceData = GetDeviceData(path);
-                
-                if(deviceData.GuessedDeviceType != EvDevExtensions.ToGuessedDeviceType(typeof(T)))
+
+                if (deviceData.GuessedDeviceType != EvDevExtensions.ToGuessedDeviceType(typeof(T)))
                     return;
 
                 var device = CreateDeviceOfType(deviceData);
@@ -94,6 +91,8 @@ namespace EvDevSharp
                 {
                     RegisteredDevices.Add(device.GetType(), new List<EvDevDevice> {device});
                 }
+                
+                device.StartMonitoring();
             });
         }
 
@@ -104,7 +103,7 @@ namespace EvDevSharp
         {
             foreach (var devices in RegisteredDevices.Values)
             {
-                devices.ForEach(d => d.StopMonitoring());
+                devices.ForEach(d => d.Dispose());
             }
 
             RegisteredDevices.Clear();
@@ -121,7 +120,7 @@ namespace EvDevSharp
                 return;
             }
 
-            devices.ForEach(d => d.StopMonitoring());
+            devices.ForEach(d => d.Dispose());
 
             RegisteredDevices.Remove(typeof(T));
         }
@@ -131,7 +130,7 @@ namespace EvDevSharp
         /// </summary>
         public static void UnregisterDevice(EvDevDevice device)
         {
-            device.StopMonitoring();
+            device.Dispose();
 
             if (RegisteredDevices.TryGetValue(device.GetType(), out var devices))
             {
@@ -161,35 +160,22 @@ namespace EvDevSharp
                 ? devices.Cast<T>().ToArray()
                 : Array.Empty<T>();
         }
-        
+
         private static EvDevDevice CreateDeviceOfType(EvDevDeviceData deviceData)
         {
             EvDevDevice device = null;
 
             switch (deviceData.GuessedDeviceType)
             {
-                case EvDevGuessedDeviceType.Unknown:
-                    device = new EvDevDevice(deviceData);
-                    break;
                 case EvDevGuessedDeviceType.Keyboard:
+                    device = new EvDevKeyboardDevice(deviceData);
                     break;
                 case EvDevGuessedDeviceType.Mouse:
                     device = new EvDevMouseDevice(deviceData);
                     break;
-                case EvDevGuessedDeviceType.TouchPad:
-                    throw new NotImplementedException();
-                    break;
-                case EvDevGuessedDeviceType.TouchScreen:
-                    throw new NotImplementedException();
-                    break;
-                case EvDevGuessedDeviceType.Tablet:
-                    throw new NotImplementedException();
-                    break;
-                case EvDevGuessedDeviceType.GamePad:
-                    throw new NotImplementedException();
-                    break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    device = new EvDevDevice(deviceData);
+                    break;
             }
 
             return device;
@@ -246,8 +232,8 @@ namespace EvDevSharp
                 if (LinuxNativeMethods.ioctl(fd, EVIOCGNAME_LONG, str) == -1)
                     throw new Win32Exception($"Unable to get evdev name for {path}");
 #elif NET6_0
-            if (LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGNAME(256)), str) == -1)
-                throw new Win32Exception($"Unable to get evdev name for {path}");
+                if (LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGNAME(256)), str) == -1)
+                    throw new Win32Exception($"Unable to get evdev name for {path}");
 #endif
 
 
@@ -280,7 +266,8 @@ namespace EvDevSharp
                 ulong EVIOCGPROP_LONG = IoCtlRequest.EVIOCGPROP((int) EvDevProperty.INPUT_PROP_CNT);
                 LinuxNativeMethods.ioctl(fd, EVIOCGPROP_LONG, bits);
 #elif NET6_0
-            LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGPROP((int) EvDevProperty.INPUT_PROP_CNT)), bits);
+                LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGPROP((int) EvDevProperty.INPUT_PROP_CNT)),
+                    bits);
 #endif
 
                 evDevProperties = DecodeBits(bits, (int) EvDevProperty.INPUT_PROP_CNT).Cast<EvDevProperty>().ToList();
@@ -302,7 +289,7 @@ namespace EvDevSharp
                             ulong EVIOCGABS_LONG = IoCtlRequest.EVIOCGABS(x);
                             LinuxNativeMethods.ioctl(fd, EVIOCGABS_LONG, &absInfo);
 #elif NET6_0
-                        LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGABS(x)), &absInfo);
+                            LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGABS(x)), &absInfo);
 #endif
                             return absInfo;
                         });
@@ -328,7 +315,7 @@ namespace EvDevSharp
 
                     LinuxNativeMethods.ioctl(fd, EVIOCGBIT_EVENT_LONG, bits);
 #elif NET6_0
-                LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGBIT(evType, bitCount)), bits);
+                    LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGBIT(evType, bitCount)), bits);
 #endif
 
                     RawEventCodes[evType] = DecodeBits(bits);
@@ -341,49 +328,55 @@ namespace EvDevSharp
             {
                 evDevGuessedDeviceType = EvDevGuessedDeviceType.Unknown;
 
-                if (deviceName != null)
+                if (deviceName == null)
+                    return false;
+
+                // Often device name says what it is
+                var isAbsolutePointingDevice = absoluteAxises?.ContainsKey(EvDevAbsoluteAxisCode.ABS_X) == true;
+
+                var n = deviceName.ToLowerInvariant();
+                if (n.Contains(("mouse")))
                 {
-                    // Often device name says what it is
-                    var isAbsolutePointingDevice = absoluteAxises?.ContainsKey(EvDevAbsoluteAxisCode.ABS_X) == true;
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.Mouse;
+                    return true;
+                }
 
-                    var n = deviceName.ToLowerInvariant();
-                    if (n.Contains("touchscreen")
-                        && isAbsolutePointingDevice
-                        && keyCodes?.Contains(EvDevKeyCode.BTN_TOUCH) == true)
-                    {
-                        evDevGuessedDeviceType = EvDevGuessedDeviceType.TouchScreen;
-                        return true;
-                    }
+                if (n.Contains("touchscreen")
+                    && isAbsolutePointingDevice
+                    && keyCodes?.Contains(EvDevKeyCode.BTN_TOUCH) == true)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.TouchScreen;
+                    return true;
+                }
 
-                    if (n.Contains("tablet")
-                        && isAbsolutePointingDevice
-                        && keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true)
-                    {
-                        evDevGuessedDeviceType = EvDevGuessedDeviceType.Tablet;
-                        return true;
-                    }
+                if (n.Contains("tablet")
+                    && isAbsolutePointingDevice
+                    && keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.Tablet;
+                    return true;
+                }
 
-                    if (n.Contains("touchpad")
-                        && isAbsolutePointingDevice
-                        && keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true)
-                    {
-                        evDevGuessedDeviceType = EvDevGuessedDeviceType.TouchPad;
-                        return true;
-                    }
+                if (n.Contains("touchpad")
+                    && isAbsolutePointingDevice
+                    && keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.TouchPad;
+                    return true;
+                }
 
-                    if (n.Contains("keyboard")
-                        && keyCodes != null)
-                    {
-                        evDevGuessedDeviceType = EvDevGuessedDeviceType.Keyboard;
-                        return true;
-                    }
+                if (n.Contains("keyboard")
+                    && keyCodes != null)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.Keyboard;
+                    return true;
+                }
 
-                    if (n.Contains("gamepad") || n.Contains("joystick")
-                        && keyCodes != null)
-                    {
-                        evDevGuessedDeviceType = EvDevGuessedDeviceType.GamePad;
-                        return true;
-                    }
+                if (n.Contains("gamepad") || n.Contains("joystick")
+                    && keyCodes != null)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.GamePad;
+                    return true;
                 }
 
                 return false;
@@ -406,7 +399,8 @@ namespace EvDevSharp
                     return true;
                 }
 
-                if (keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true && keyCodes?.Contains(EvDevKeyCode.BTN_RIGHT) == true)
+                if (keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true &&
+                    keyCodes?.Contains(EvDevKeyCode.BTN_RIGHT) == true)
                 {
                     if (absoluteAxises != null)
                     {
@@ -452,8 +446,8 @@ namespace EvDevSharp
                 if (LinuxNativeMethods.ioctl(fd, EVUIOCGVERSION_LONG, &version) == -1)
                     throw new Win32Exception($"Unable to get evdev driver version for {path}");
 #elif NET6_0
-            if (LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGVERSION), &version) == -1)
-                throw new Win32Exception($"Unable to get evdev driver version for {path}");
+                if (LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGVERSION), &version) == -1)
+                    throw new Win32Exception($"Unable to get evdev driver version for {path}");
 #endif
 
 
