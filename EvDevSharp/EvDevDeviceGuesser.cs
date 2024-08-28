@@ -48,19 +48,18 @@ namespace EvDevSharp
                 Properties = properties,
                 RawEventCodes = rawEventCodes
             };
-        }
 
-        private static Dictionary<EvDevEventType, List<int>> GetDeviceRawEventCodes(byte[]? bits, int bitCount, IntPtr fd)
-        {
-            Dictionary<EvDevEventType, List<int>> RawEventCodes = new();
-
-            var supportedEvents = DecodeBits(bits).Cast<EvDevEventType>().ToList();
-            foreach (var evType in supportedEvents)
+            Dictionary<EvDevEventType, List<int>> GetDeviceRawEventCodes(byte[]? bits, int bitCount, IntPtr fd)
             {
-                if (evType == EvDevEventType.EV_SYN)
-                    continue;
+                Dictionary<EvDevEventType, List<int>> RawEventCodes = new();
 
-                Array.Clear(bits, 0, bits.Length);
+                var supportedEvents = DecodeBits(bits).Cast<EvDevEventType>().ToList();
+                foreach (var evType in supportedEvents)
+                {
+                    if (evType == EvDevEventType.EV_SYN)
+                        continue;
+
+                    Array.Clear(bits, 0, bits.Length);
 
 #if NETSTANDARD || NETFRAMEWORK
                 ulong EVIOCGBIT_EVENT_LONG = IoCtlRequest.EVIOCGBIT(evType, bitCount);
@@ -70,15 +69,15 @@ namespace EvDevSharp
                     LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGBIT(evType, bitCount)), bits);
 #endif
 
-                RawEventCodes[evType] = DecodeBits(bits);
+                    RawEventCodes[evType] = DecodeBits(bits);
+                }
+
+                return RawEventCodes;
             }
 
-            return RawEventCodes;
-        }
-
-        private static List<EvDevProperty> GetDeviceProperties(IntPtr fd, byte[]? bits)
-        {
-            List<EvDevProperty> evDevProperties = new List<EvDevProperty>();
+            List<EvDevProperty> GetDeviceProperties(IntPtr fd, byte[]? bits)
+            {
+                List<EvDevProperty> evDevProperties = new List<EvDevProperty>();
 #if NETSTANDARD || NETFRAMEWORK
             ulong EVIOCGPROP_LONG = IoCtlRequest.EVIOCGPROP((int) EvDevProperty.INPUT_PROP_CNT);
             LinuxNativeMethods.ioctl(fd, EVIOCGPROP_LONG, bits);
@@ -87,141 +86,144 @@ namespace EvDevSharp
                     bits);
 #endif
 
-            evDevProperties = DecodeBits(bits, (int) EvDevProperty.INPUT_PROP_CNT).Cast<EvDevProperty>().ToList();
-            return evDevProperties;
-        }
-
-        private static bool GuessDeviceTypeByKeys(out EvDevGuessedDeviceType deviceType, List<EvDevKeyCode>? keyCodes, List<EvDevProperty>? properties, Dictionary<EvDevAbsoluteAxisCode, EvDevAbsAxisInfo>? absoluteAxises, List<EvDevRelativeAxisCode>? relativeAxises)
-        {
-            deviceType = EvDevGuessedDeviceType.Unknown;
-
-            if (keyCodes?.Contains(EvDevKeyCode.BTN_TOUCH) == true
-                && properties.Contains(EvDevProperty.INPUT_PROP_DIRECT))
-            {
-                deviceType = EvDevGuessedDeviceType.TouchScreen;
-                return true;
+                evDevProperties = DecodeBits(bits, (int) EvDevProperty.INPUT_PROP_CNT).Cast<EvDevProperty>().ToList();
+                return evDevProperties;
             }
 
-            if (keyCodes?.Contains(EvDevKeyCode.BTN_SOUTH) == true)
+            bool GuessDeviceTypeByKeys(out EvDevGuessedDeviceType deviceType, List<EvDevKeyCode>? keyCodes,
+                List<EvDevProperty>? properties, Dictionary<EvDevAbsoluteAxisCode, EvDevAbsAxisInfo>? absoluteAxises,
+                List<EvDevRelativeAxisCode>? relativeAxises)
             {
-                deviceType = EvDevGuessedDeviceType.GamePad;
-                return true;
-            }
+                deviceType = EvDevGuessedDeviceType.Unknown;
 
-            if (keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true &&
-                keyCodes?.Contains(EvDevKeyCode.BTN_RIGHT) == true)
-            {
-                if (absoluteAxises != null)
+                if (keyCodes?.Contains(EvDevKeyCode.BTN_TOUCH) == true
+                    && properties.Contains(EvDevProperty.INPUT_PROP_DIRECT))
                 {
-                    if (absoluteAxises?.ContainsKey(EvDevAbsoluteAxisCode.ABS_X) == true)
-                    {
-                        if (properties.Contains(EvDevProperty.INPUT_PROP_DIRECT))
-                        {
-                            deviceType = EvDevGuessedDeviceType.Tablet;
-                            return true;
-                        }
+                    deviceType = EvDevGuessedDeviceType.TouchScreen;
+                    return true;
+                }
 
+                if (keyCodes?.Contains(EvDevKeyCode.BTN_SOUTH) == true)
+                {
+                    deviceType = EvDevGuessedDeviceType.GamePad;
+                    return true;
+                }
+
+                if (keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true &&
+                    keyCodes?.Contains(EvDevKeyCode.BTN_RIGHT) == true)
+                {
+                    if (absoluteAxises != null)
+                    {
+                        if (absoluteAxises?.ContainsKey(EvDevAbsoluteAxisCode.ABS_X) == true)
                         {
-                            deviceType = EvDevGuessedDeviceType.TouchPad;
-                            return true;
+                            if (properties.Contains(EvDevProperty.INPUT_PROP_DIRECT))
+                            {
+                                deviceType = EvDevGuessedDeviceType.Tablet;
+                                return true;
+                            }
+
+                            {
+                                deviceType = EvDevGuessedDeviceType.TouchPad;
+                                return true;
+                            }
                         }
+                    }
+
+                    if (relativeAxises?.Contains(EvDevRelativeAxisCode.REL_X) == true &&
+                        relativeAxises.Contains(EvDevRelativeAxisCode.REL_Y))
+                    {
+                        deviceType = EvDevGuessedDeviceType.Mouse;
+                        return true;
                     }
                 }
 
-                if (relativeAxises?.Contains(EvDevRelativeAxisCode.REL_X) == true &&
-                    relativeAxises.Contains(EvDevRelativeAxisCode.REL_Y))
+                if (keyCodes != null)
                 {
-                    deviceType = EvDevGuessedDeviceType.Mouse;
+                    deviceType = EvDevGuessedDeviceType.Keyboard;
                     return true;
                 }
-            }
 
-            if (keyCodes != null)
-            {
-                deviceType = EvDevGuessedDeviceType.Keyboard;
-                return true;
-            }
-
-            return false;
-        }
-
-        private static List<int> DecodeBits(byte[] arr, int? max = null)
-        {
-            var rv = new List<int>();
-            max ??= arr.Length * 8;
-            for (int idx = 0; idx < max; idx++)
-            {
-                var b = arr[idx / 8];
-                var shift = idx % 8;
-                var v = (b >> shift) & 1;
-                if (v != 0)
-                    rv.Add(idx);
-            }
-
-            return rv;
-        }
-
-        private static bool GuessDeviceTypeByName(out EvDevGuessedDeviceType evDevGuessedDeviceType, string? deviceName, Dictionary<EvDevAbsoluteAxisCode, EvDevAbsAxisInfo>? absoluteAxises, List<EvDevKeyCode>? keyCodes)
-        {
-            evDevGuessedDeviceType = EvDevGuessedDeviceType.Unknown;
-
-            if (deviceName == null)
                 return false;
-
-            // Often device name says what it is
-            var isAbsolutePointingDevice = absoluteAxises?.ContainsKey(EvDevAbsoluteAxisCode.ABS_X) == true;
-
-            var n = deviceName.ToLowerInvariant();
-            if (n.Contains(("mouse")))
-            {
-                evDevGuessedDeviceType = EvDevGuessedDeviceType.Mouse;
-                return true;
             }
 
-            if (n.Contains("touchscreen")
-                && isAbsolutePointingDevice
-                && keyCodes?.Contains(EvDevKeyCode.BTN_TOUCH) == true)
+            List<int> DecodeBits(byte[] arr, int? max = null)
             {
-                evDevGuessedDeviceType = EvDevGuessedDeviceType.TouchScreen;
-                return true;
+                var rv = new List<int>();
+                max ??= arr.Length * 8;
+                for (int idx = 0; idx < max; idx++)
+                {
+                    var b = arr[idx / 8];
+                    var shift = idx % 8;
+                    var v = (b >> shift) & 1;
+                    if (v != 0)
+                        rv.Add(idx);
+                }
+
+                return rv;
             }
 
-            if (n.Contains("tablet")
-                && isAbsolutePointingDevice
-                && keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true)
+            bool GuessDeviceTypeByName(out EvDevGuessedDeviceType evDevGuessedDeviceType, string? deviceName,
+                Dictionary<EvDevAbsoluteAxisCode, EvDevAbsAxisInfo>? absoluteAxises, List<EvDevKeyCode>? keyCodes)
             {
-                evDevGuessedDeviceType = EvDevGuessedDeviceType.Tablet;
-                return true;
+                evDevGuessedDeviceType = EvDevGuessedDeviceType.Unknown;
+
+                if (deviceName == null)
+                    return false;
+
+                // Often device name says what it is
+                var isAbsolutePointingDevice = absoluteAxises?.ContainsKey(EvDevAbsoluteAxisCode.ABS_X) == true;
+
+                var n = deviceName.ToLowerInvariant();
+                if (n.Contains(("mouse")))
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.Mouse;
+                    return true;
+                }
+
+                if (n.Contains("touchscreen")
+                    && isAbsolutePointingDevice
+                    && keyCodes?.Contains(EvDevKeyCode.BTN_TOUCH) == true)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.TouchScreen;
+                    return true;
+                }
+
+                if (n.Contains("tablet")
+                    && isAbsolutePointingDevice
+                    && keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.Tablet;
+                    return true;
+                }
+
+                if (n.Contains("touchpad")
+                    && isAbsolutePointingDevice
+                    && keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.TouchPad;
+                    return true;
+                }
+
+                if (n.Contains("keyboard")
+                    && keyCodes != null)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.Keyboard;
+                    return true;
+                }
+
+                if (n.Contains("gamepad") || n.Contains("joystick")
+                    && keyCodes != null)
+                {
+                    evDevGuessedDeviceType = EvDevGuessedDeviceType.GamePad;
+                    return true;
+                }
+
+                return false;
             }
 
-            if (n.Contains("touchpad")
-                && isAbsolutePointingDevice
-                && keyCodes?.Contains(EvDevKeyCode.BTN_LEFT) == true)
+            Version GetDeviceDriverVersion(string path, IntPtr fd)
             {
-                evDevGuessedDeviceType = EvDevGuessedDeviceType.TouchPad;
-                return true;
-            }
-
-            if (n.Contains("keyboard")
-                && keyCodes != null)
-            {
-                evDevGuessedDeviceType = EvDevGuessedDeviceType.Keyboard;
-                return true;
-            }
-
-            if (n.Contains("gamepad") || n.Contains("joystick")
-                && keyCodes != null)
-            {
-                evDevGuessedDeviceType = EvDevGuessedDeviceType.GamePad;
-                return true;
-            }
-
-            return false;
-        }
-
-        private static Version GetDeviceDriverVersion(string path, IntPtr fd)
-        {
-            int version = 0;
+                int version = 0;
 
 #if NETSTANDARD || NETFRAMEWORK
             ulong EVUIOCGVERSION_LONG = 2147763457;
@@ -234,19 +236,20 @@ namespace EvDevSharp
 #endif
 
 
-            return new Version(version >> 16, (version >> 8) & 0xff, version & 0xff);
-        }
+                return new Version(version >> 16, (version >> 8) & 0xff, version & 0xff);
+            }
 
-        private static Dictionary<EvDevAbsoluteAxisCode, EvDevAbsAxisInfo> GetDeviceAbsoluteAxises(Dictionary<EvDevEventType, List<int>>? rawEventCodes, IntPtr fd)
-        {
-            Dictionary<EvDevAbsoluteAxisCode, EvDevAbsAxisInfo>? evDevAbsAxisInfos = new();
-            if (rawEventCodes.TryGetValue(EvDevEventType.EV_ABS, out var abs))
+            Dictionary<EvDevAbsoluteAxisCode, EvDevAbsAxisInfo> GetDeviceAbsoluteAxises(
+                Dictionary<EvDevEventType, List<int>>? rawEventCodes, IntPtr fd)
             {
-                evDevAbsAxisInfos = abs.ToDictionary(
-                    x => (EvDevAbsoluteAxisCode) x,
-                    x =>
-                    {
-                        var absInfo = default(EvDevAbsAxisInfo);
+                Dictionary<EvDevAbsoluteAxisCode, EvDevAbsAxisInfo>? evDevAbsAxisInfos = new();
+                if (rawEventCodes.TryGetValue(EvDevEventType.EV_ABS, out var abs))
+                {
+                    evDevAbsAxisInfos = abs.ToDictionary(
+                        x => (EvDevAbsoluteAxisCode) x,
+                        x =>
+                        {
+                            var absInfo = default(EvDevAbsAxisInfo);
 
 #if NETSTANDARD || NETFRAMEWORK
                         ulong EVIOCGABS_LONG = IoCtlRequest.EVIOCGABS(x);
@@ -254,34 +257,34 @@ namespace EvDevSharp
 #elif NET6_0
                             LinuxNativeMethods.ioctl(fd, new CULong(IoCtlRequest.EVIOCGABS(x)), &absInfo);
 #endif
-                        return absInfo;
-                    });
+                            return absInfo;
+                        });
+                }
+
+                return evDevAbsAxisInfos;
             }
 
-            return evDevAbsAxisInfos;
-        }
+            List<EvDevKeyCode> GetDeviceKeyCodes(Dictionary<EvDevEventType, List<int>>? rawEventCodes)
+            {
+                List<EvDevKeyCode>? evDevKeyCodes = new List<EvDevKeyCode>();
 
-        private static List<EvDevKeyCode> GetDeviceKeyCodes(Dictionary<EvDevEventType, List<int>>? rawEventCodes)
-        {
-            List<EvDevKeyCode>? evDevKeyCodes = new List<EvDevKeyCode>();
+                if (rawEventCodes.TryGetValue(EvDevEventType.EV_KEY, out var keys))
+                    evDevKeyCodes = keys.Cast<EvDevKeyCode>().ToList();
+                return evDevKeyCodes;
+            }
 
-            if (rawEventCodes.TryGetValue(EvDevEventType.EV_KEY, out var keys))
-                evDevKeyCodes = keys.Cast<EvDevKeyCode>().ToList();
-            return evDevKeyCodes;
-        }
+            List<EvDevRelativeAxisCode> GetDeviceRelativeAxises(Dictionary<EvDevEventType, List<int>>? rawEventCodes)
+            {
+                List<EvDevRelativeAxisCode>? evDevRelativeAxisCodes = new List<EvDevRelativeAxisCode>();
 
-        private static List<EvDevRelativeAxisCode> GetDeviceRelativeAxises(Dictionary<EvDevEventType, List<int>>? rawEventCodes)
-        {
-            List<EvDevRelativeAxisCode>? evDevRelativeAxisCodes = new List<EvDevRelativeAxisCode>();
+                if (rawEventCodes.TryGetValue(EvDevEventType.EV_REL, out var rel))
+                    evDevRelativeAxisCodes = rel.Cast<EvDevRelativeAxisCode>().ToList();
+                return evDevRelativeAxisCodes;
+            }
 
-            if (rawEventCodes.TryGetValue(EvDevEventType.EV_REL, out var rel))
-                evDevRelativeAxisCodes = rel.Cast<EvDevRelativeAxisCode>().ToList();
-            return evDevRelativeAxisCodes;
-        }
-
-        private static string? GetDeviceName(IntPtr fd, string path)
-        {
-            var str = stackalloc byte[256];
+            string? GetDeviceName(IntPtr fd, string path)
+            {
+                var str = stackalloc byte[256];
 
 #if NETSTANDARD || NETFRAMEWORK
             ulong EVIOCGNAME_LONG = IoCtlRequest.EVIOCGNAME(256);
@@ -294,8 +297,9 @@ namespace EvDevSharp
 #endif
 
 
-            var name = Marshal.PtrToStringAnsi(new IntPtr(str));
-            return name;
+                var name = Marshal.PtrToStringAnsi(new IntPtr(str));
+                return name;
+            }
         }
     }
 }
