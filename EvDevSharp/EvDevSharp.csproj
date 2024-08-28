@@ -3,8 +3,16 @@
     <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
-        <TargetFrameworks>netstandard2.1;net481</TargetFrameworks>
         <LangVersion>9</LangVersion>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <Title>EvDevSharp</Title>
+        <Description>Wrapper library for evdev for C# </Description>
+        <RepositoryUrl>https://github.com/Draass/evdev-sharp-unity</RepositoryUrl>
+        <PackageTags>linux;evdev;c#</PackageTags>
+        <Version>0.2</Version>
+        <Authors>draas</Authors>
+        <PackageId>EvDevSharpWrapper</PackageId>
+        <TargetFrameworks>net6.0;netstandard2.1;net481</TargetFrameworks>
     </PropertyGroup>
 
 </Project>

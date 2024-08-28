@@ -2,7 +2,7 @@ using System;
 
 namespace EvDevSharp
 {
-    public sealed partial class EvDevDevice : IDisposable
+    public partial class EvDevDevice : IDisposable
     {
         public delegate void OnSynEventHandler(object sender, OnSynEventArgs e);
 
