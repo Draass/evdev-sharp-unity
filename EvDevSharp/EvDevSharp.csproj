@@ -8,11 +8,17 @@
         <Title>EvDevSharp</Title>
         <Description>Wrapper library for evdev for C# </Description>
         <RepositoryUrl>https://github.com/Draass/evdev-sharp-unity</RepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
         <PackageTags>linux;evdev;c#</PackageTags>
-        <Version>0.2</Version>
+        <Version>0.2.1</Version>
         <Authors>draas</Authors>
         <PackageId>EvDevSharpWrapper</PackageId>
-        <TargetFrameworks>net6.0;netstandard2.1;net481</TargetFrameworks>
+        <TargetFrameworks>net6.0;netstandard2.0;net472</TargetFrameworks>
+        <PackageReleaseNotes>HOTFIX: fix SIGSEGV on start</PackageReleaseNotes>
     </PropertyGroup>
-
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
+        <None Include="LICENSE.txt" Pack="true" PackagePath=""/>
+    </ItemGroup>
 </Project>
