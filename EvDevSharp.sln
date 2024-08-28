@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvDevSharp", "EvDevSharp\EvDevSharp.csproj", "{A6CE288D-DE91-4433-BB3F-2C7FC4FD793F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvDevSharp.Example", "EvDevSharp.Example\EvDevSharp.Example.csproj", "{4AE19A6C-7EDB-4CB2-8F57-7BEB36889A0A}"

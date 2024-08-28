@@ -7,7 +7,10 @@ if (UnixEnvironment.GetEffectiveUserId() != UnixEnvironment.RootUserId)
     return;
 }
 
-var devices = EvDevDevice.GetDevices().OrderBy(d => d.DevicePath).ToList();
+EvDev.RegisterDevices();
+
+var devices = EvDev.GetRegisteredDevices().OrderBy(d => d.DevicePath).ToList();
+
 if (!devices.Any())
 {
     Console.WriteLine("No device was found.");
