@@ -15,7 +15,7 @@ namespace EvDevSharp
         /// <summary>
         /// This method starts to read the device's event file on a separate thread and will raise events accordingly.
         /// </summary>
-        public virtual void StartMonitoring()
+        public void StartMonitoring()
         {
             if (cts is not null && !cts.IsCancellationRequested)
                 return;
@@ -35,7 +35,7 @@ namespace EvDevSharp
 
         public void Dispose() => StopMonitoring();
 
-        protected virtual void Monitor()
+        protected void Monitor()
         {
             InputEvent inputEvent;
             int size = Marshal.SizeOf(typeof(InputEvent));
