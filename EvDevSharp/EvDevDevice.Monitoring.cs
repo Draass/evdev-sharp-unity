@@ -9,8 +9,8 @@ namespace EvDevSharp
 {
     public partial class EvDevDevice : IDisposable
     {
-        protected Task? monitoringTask;
-        protected CancellationTokenSource? cts;
+        private Task? monitoringTask;
+        private CancellationTokenSource? cts;
 
         /// <summary>
         /// This method starts to read the device's event file on a separate thread and will raise events accordingly.
@@ -22,6 +22,7 @@ namespace EvDevSharp
 
             cts = new();
             monitoringTask = Task.Run(Monitor);
+            IsMonitoring = true;
         }
 
         /// <summary>
@@ -29,6 +30,7 @@ namespace EvDevSharp
         /// </summary>
         public void StopMonitoring()
         {
+            IsMonitoring = false;
             cts?.Cancel();
             monitoringTask?.Wait();
         }

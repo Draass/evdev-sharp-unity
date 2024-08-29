@@ -27,8 +27,6 @@ Evdev.RegisterDevices<EvDevMouseDevice>();
 Evdev.RegisterDevices<EvDevKeyboardDevice>();
 ```
 
-This method will enumerate each `/dev/input/event*` file and creates an object for each one.
-
 Each `EvDevDevice` instance contains properties such as device's buttons and axises. It also provides events that you can subscribe to.
 If you want to stop receiving events, you must call the `StopMonitoring()` method on the instance.
 
@@ -41,6 +39,11 @@ These wrappers contain wrapper events that you can subscribe to, but you can sti
 - For Unity - should work for any C# and .Net Framework/Standard compatible version, though it was tested only on Unity 2022.3.26f1
 - Should work on any Linux version, but it was tested only on Linux 6 distro version
 - Application should be run as root in order to access evdev devices
+
+## Warning
+This library is still in development and may (will) have some bugs. It is used in production, so bugs probably will be
+detected and fixed, but if you encountered bug or strange behavior, please report it. You can create an issue or write me
+directly on draas.games@gmail.com
 
 ## Installation:
 ### Non-Unity
