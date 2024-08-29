@@ -22,6 +22,7 @@ namespace EvDevSharp
 
             cts = new();
             monitoringTask = Task.Run(Monitor);
+            IsMonitoring = true;
         }
 
         /// <summary>
@@ -29,6 +30,7 @@ namespace EvDevSharp
         /// </summary>
         public void StopMonitoring()
         {
+            IsMonitoring = false;
             cts?.Cancel();
             monitoringTask?.Wait();
         }
