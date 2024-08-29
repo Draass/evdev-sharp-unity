@@ -11,14 +11,15 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
         <PackageTags>linux;evdev;c#</PackageTags>
-        <Version>0.2.1</Version>
+        <Version>0.3</Version>
         <Authors>draas</Authors>
         <PackageId>EvDevSharpWrapper</PackageId>
         <TargetFrameworks>net6.0;netstandard2.0;net472</TargetFrameworks>
-        <PackageReleaseNotes>HOTFIX: fix SIGSEGV on start</PackageReleaseNotes>
+        <PackageReleaseNotes>- Introduce events for mouse
+- Fix error when receiving mouse events</PackageReleaseNotes>
     </PropertyGroup>
     <ItemGroup>
-        <None Include="README.md" Pack="true" PackagePath="\"/>
+        <None Include="README.md" Pack="true" PackagePath=""/>
         <None Include="LICENSE.txt" Pack="true" PackagePath=""/>
     </ItemGroup>
 </Project>

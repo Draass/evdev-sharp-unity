@@ -121,7 +121,6 @@ namespace EvDevSharp.Wrappers.Mouse
             }
         }
 
-
         ~EvDevMouseDevice() => StopMonitoring();
     }
 }

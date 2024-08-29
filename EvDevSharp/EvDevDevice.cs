@@ -25,7 +25,7 @@ namespace EvDevSharp
         public string? Name => _deviceData.Name;
         
         /// <summary>
-        /// Get the device path of the device. Should look like /dev/input/eventX
+        /// Get the device path of the device. Returns path of type /dev/input/eventX
         /// </summary>
         public string DevicePath => _deviceData.DevicePath;
         
