@@ -30,7 +30,7 @@ namespace EvDevSharp
 
             var devicesPaths = Directory.GetFiles(INPUT_PATH, INPUT_PATH_SEARCH_PATTERN);
 
-            Parallel.ForEach(devicesPaths, path =>
+            foreach (var path in devicesPaths)
             {
                 EvDevDeviceData deviceData = EvDevDeviceGuesser.GetDeviceData(path);
 
@@ -52,7 +52,7 @@ namespace EvDevSharp
                 }
 
                 device.StartMonitoring();
-            });
+            }
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace EvDevSharp
 
             var devicesPaths = Directory.GetFiles(INPUT_PATH, INPUT_PATH_SEARCH_PATTERN);
 
-            Parallel.ForEach(devicesPaths, path =>
+            foreach (var path in devicesPaths)
             {
                 EvDevDeviceData deviceData = EvDevDeviceGuesser.GetDeviceData(path);
 
@@ -91,7 +91,7 @@ namespace EvDevSharp
                 }
 
                 device.StartMonitoring();
-            });
+            }
         }
 
         /// <summary>
